@@ -1,0 +1,90 @@
+/**
+ * GENERATOR SERTIFIKAT (START NUMBER 154) + WA
+ */
+
+function onFormSubmit(e) {
+  if (!e) { Logger.log("Jalankan via Trigger!"); return; }
+
+  // --- 1. KONFIGURASI ---
+  const TEMPLATE_ID = 'MASUKKAN_ID_SLIDE_TEMPLATE_DISINI';
+  const FOLDER_ID   = 'MASUKKAN_ID_FOLDER_GOOGLE_DRIVE_DISINI';
+  const API_KEY_WA  = 'MASUKKAN_TOKEN_FONNTE_DISINI'; 
+
+  const IDX_NAMA   = 1; 
+  const IDX_WA     = 2; 
+  const IDX_STATUS = 3; 
+
+  let tempFile;
+
+  try {
+    const namaPeserta   = e.values[IDX_NAMA];
+    let nomorWA         = e.values[IDX_WA];
+    const statusPeserta = e.values[IDX_STATUS];
+
+    // --- 2. LOGIKA NOMOR SERTIFIKAT (START 154) ---
+    // Tentukan mau mulai dari angka berapa
+    const START_NUMBER = 154; 
+    
+    // Ambil posisi baris saat ini
+    const rowIndex = e.range.getRow(); 
+    
+    // RUMUS: Angka Awal + (Baris Sekarang - Baris Pertama Data)
+    // Baris 2 (Data ke-1) -> 154 + (2 - 2) = 154
+    // Baris 3 (Data ke-2) -> 154 + (3 - 2) = 155
+    const currentNumber = START_NUMBER + (rowIndex - 2);
+
+    // RAKIT NOMOR
+    // Hasil: 0007.2.6/154, 0007.2.6/155, dst...
+    const noSertifikat = "0007.2.6/" + currentNumber; 
+
+    // --- 3. PROSES FILE ---
+    if (!nomorWA) return; 
+    nomorWA = nomorWA.toString().replace(/[^0-9]/g, ""); 
+    if (nomorWA.startsWith('0')) nomorWA = '62' + nomorWA.slice(1);
+
+    const templateFile = DriveApp.getFileById(TEMPLATE_ID);
+    const outputFolder = DriveApp.getFolderById(FOLDER_ID);
+    
+    tempFile = templateFile.makeCopy('TEMP_' + namaPeserta, outputFolder);
+    const tempDeck = SlidesApp.openById(tempFile.getId());
+    const slide = tempDeck.getSlides()[0];
+    
+    // Ganti Variabel
+    slide.replaceAllText('{{NAMA}}', namaPeserta);
+    slide.replaceAllText('{{SEBAGAI}}', statusPeserta.toUpperCase());
+    slide.replaceAllText('{{NOMOR}}', noSertifikat); // Masukkan nomor 154 dst
+    
+    tempDeck.saveAndClose();
+    
+    // Simpan PDF
+    const pdfBlob = tempFile.getAs(MimeType.PDF);
+    const pdfFile = outputFolder.createFile(pdfBlob).setName("Sertifikat - " + namaPeserta);
+    
+    pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const downloadUrl = "https://drive.google.com/uc?export=download&id=" + pdfFile.getId();
+
+    // --- 4. KIRIM WA ---
+    const pesan = `Halo *${namaPeserta}*,\n\nTerima kasih telah berpartisipasi sebagai *${statusPeserta}*.\nNomor Sertifikat: ${noSertifikat}\n\nUnduh sertifikat Anda di sini:\n${downloadUrl}\n\nSalam,\nPanitia`;
+
+    const payload = {
+      'target': nomorWA,
+      'message': pesan,
+    };
+
+    const options = {
+      'method': 'post',
+      'headers': { 'Authorization': API_KEY_WA },
+      'payload': payload,
+      'muteHttpExceptions': true
+    };
+
+    UrlFetchApp.fetch('https://api.fonnte.com/send', options);
+
+  } catch (error) {
+    Logger.log("ERROR: " + error.toString());
+  } finally {
+    if (tempFile) {
+      try { tempFile.setTrashed(true); } catch(e) {}
+    }
+  }
+}
