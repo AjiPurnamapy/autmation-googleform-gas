@@ -49,7 +49,7 @@ function onFormSubmit(e) {
     const tempDeck = SlidesApp.openById(tempFile.getId());
     const slide = tempDeck.getSlides()[0];
     
-    // Ganti Variabel
+    // Ganti Variabel sesuaikan dengan nama variabel di template google slides
     slide.replaceAllText('{{NAMA}}', namaPeserta);
     slide.replaceAllText('{{SEBAGAI}}', statusPeserta.toUpperCase());
     slide.replaceAllText('{{NOMOR}}', noSertifikat); // Masukkan nomor 154 dst
