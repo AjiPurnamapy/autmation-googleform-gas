@@ -2,7 +2,7 @@
  * GENERATOR SERTIFIKAT (START NUMBER 154) + WA
  */
 
-function onFormSubmit(e) {
+function SendSertifikat(e) {
   if (!e) { Logger.log("Jalankan via Trigger!"); return; }
 
   // --- 1. KONFIGURASI ---
